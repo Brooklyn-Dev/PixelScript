@@ -2,8 +2,9 @@ import PixelEditor from "./editor";
 
 const fileInput = document.querySelector(".editor__toolbar-file-input");
 const canvas = document.querySelector(".editor__canvas");
+const canvasOverlay = document.querySelector(".editor__canvas-overlay");
 
-const pixelEditor = new PixelEditor(canvas);
+const pixelEditor = new PixelEditor(canvas, canvasOverlay);
 
 function loadImageFile(file) {
 	return new Promise((resolve, reject) => {

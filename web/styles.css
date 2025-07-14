@@ -32,7 +32,17 @@ body {
 	position: relative;
 }
 
-.editor__canvas {
+.editor__canvas,
+.editor__canvas-overlay {
+	position: absolute;
+	top: 0;
+	left: 0;
 	width: 100%;
 	height: 100%;
+	display: block;
+}
+
+.editor__canvas-overlay {
+	pointer-events: none;
+	z-index: 10;
 }

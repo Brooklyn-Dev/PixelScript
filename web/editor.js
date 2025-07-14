@@ -1,15 +1,24 @@
-import Rect from "./rect";
+import { getPixelFromImageData, getPixelBrightness } from "./utils/image";
+import Rect from "./utils/rect";
 
 export default class PixelEditor {
 	/** @type {HTMLCanvasElement} */
 	#canvas = null;
+	/** @type {HTMLCanvasElement} */
+	#canvasOverlay = null;
 
 	/** @type {CanvasRenderingContext2D} */
 	#ctx = null;
+	/** @type {CanvasRenderingContext2D} */
+	#ctxOverlay = null;
 
-	/** @param {HTMLCanvasElement} canvas */
-	constructor(canvas) {
+	/**
+	 * @param {HTMLCanvasElement} canvas
+	 * @param {HTMLCanvasElement} canvasOverlay
+	 */
+	constructor(canvas, canvasOverlay) {
 		this.#canvas = canvas;
+		this.#canvasOverlay = canvasOverlay;
 		this.#updateCanvasSize();
 
 		/** @type {HTMLImageElement} */
@@ -34,6 +43,9 @@ export default class PixelEditor {
 		this.#canvas.width = width;
 		this.#canvas.height = height;
 
+		this.#canvasOverlay.width = width;
+		this.#canvasOverlay.height = height;
+
 		if (this.viewport) {
 			const centreScreenX = oldWidth / 2;
 			const centreScreenY = oldHeight / 2;
@@ -53,9 +65,14 @@ export default class PixelEditor {
 
 		this.#ctx = this.#canvas.getContext("2d");
 		this.#ctx.imageSmoothingEnabled = false;
+		this.#ctxOverlay = this.#canvasOverlay.getContext("2d");
+		this.#ctxOverlay.imageSmoothingEnabled = false;
 	}
 
-	/** @param {MouseEvent} e */
+	/**
+	 * @param {MouseEvent} e
+	 * @returns {{x: number, y: number}}
+	 */
 	#getMousePos(e) {
 		const rect = this.#canvas.getBoundingClientRect();
 		return {
@@ -64,10 +81,43 @@ export default class PixelEditor {
 		};
 	}
 
+	#clearOverlay() {
+		this.#ctxOverlay.clearRect(0, 0, this.#canvasOverlay.width, this.#canvasOverlay.height);
+	}
+
+	/** @param {MouseEvent} e */
+	#updateOverlay(e) {
+		if (!this.image) return;
+
+		const { x: mx, y: my } = this.#getMousePos(e);
+
+		if (
+			mx < this.viewport.x ||
+			mx > this.viewport.x + this.viewport.w ||
+			my < this.viewport.y ||
+			my > this.viewport.y + this.viewport.h
+		) {
+			this.#clearOverlay();
+			return;
+		}
+
+		const col = Math.floor((mx - this.viewport.x) / this.zoom);
+		const row = Math.floor((my - this.viewport.y) / this.zoom);
+
+		const x = col * this.zoom + this.viewport.x;
+		const y = row * this.zoom + this.viewport.y;
+
+		const pixel = getPixelFromImageData(this.imageData, col, row);
+		const pixelBrightness = getPixelBrightness(pixel);
+		const colour = pixelBrightness >= 128 ? "rgba(0,0,0,0.4)" : "rgba(255,255,255,0.4)";
+
+		this.renderOverlay(x, y, colour);
+	}
+
 	#setupEventListeners() {
 		window.addEventListener("resize", () => {
 			this.#updateCanvasSize();
-			this.render();
+			this.#renderCanvas();
 		});
 
 		this.#canvas.addEventListener("wheel", (e) => {
@@ -89,7 +139,8 @@ export default class PixelEditor {
 			this.viewport.x = mx - offsetX * this.zoom;
 			this.viewport.y = my - offsetY * this.zoom;
 
-			this.render();
+			this.#renderCanvas();
+			this.#updateOverlay(e);
 		});
 
 		this.#canvas.addEventListener("mousedown", (e) => {
@@ -100,18 +151,20 @@ export default class PixelEditor {
 		});
 
 		this.#canvas.addEventListener("mousemove", (e) => {
-			if (!this.isDragging) return;
+			if (this.isDragging) {
+				const { x: mx, y: my } = this.#getMousePos(e);
+				const dx = mx - this.lastMouse.x;
+				const dy = my - this.lastMouse.y;
 
-			const { x: mx, y: my } = this.#getMousePos(e);
-			const dx = mx - this.lastMouse.x;
-			const dy = my - this.lastMouse.y;
+				this.viewport.x += dx;
+				this.viewport.y += dy;
 
-			this.viewport.x += dx;
-			this.viewport.y += dy;
+				this.lastMouse = { x: mx, y: my };
 
-			this.lastMouse = this.#getMousePos(e);
+				this.#renderCanvas();
+			}
 
-			this.render();
+			this.#updateOverlay(e);
 		});
 
 		this.#canvas.addEventListener("mouseup", (e) => {
@@ -119,6 +172,8 @@ export default class PixelEditor {
 
 			this.isDragging = false;
 		});
+
+		this.#canvas.addEventListener("mousemove", this.#updateOverlay);
 	}
 
 	/** @param {HTMLImageElement} img */
@@ -126,6 +181,7 @@ export default class PixelEditor {
 		this.image = img;
 
 		this.#ctx.drawImage(img, 0, 0);
+		console.log(img.width, img.height);
 		this.imageData = this.#ctx.getImageData(0, 0, img.width, img.height);
 
 		const scaleX = this.#canvas.width / img.width;
@@ -143,13 +199,25 @@ export default class PixelEditor {
 			offsetY
 		);
 
-		this.render();
+		this.#updateCanvasSize();
+		this.#renderCanvas();
 	}
 
-	render() {
+	#renderCanvas() {
 		if (!this.viewport) return;
 
 		this.#ctx.clearRect(0, 0, this.#canvas.width, this.#canvas.height);
 		this.#ctx.drawImage(this.image, ...this.viewport);
+	}
+
+	/**
+	 * @param {number} x
+	 * @param {number} y
+	 * @param {string} colour
+	 */
+	renderOverlay(x, y, colour) {
+		this.#ctxOverlay.clearRect(0, 0, this.#canvasOverlay.width, this.#canvasOverlay.height);
+		this.#ctxOverlay.fillStyle = colour;
+		this.#ctxOverlay.fillRect(x, y, this.zoom, this.zoom);
 	}
 }
