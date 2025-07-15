@@ -17,6 +17,6 @@ export function getPixelFromImageData(imageData, x, y) {
  * @returns {Number} brightness (0-255)
  */
 export function getPixelBrightness([r, g, b]) {
-	if (r === undefined || g === undefined || b === undefined) return 0;
+	if (r === undefined || g === undefined || b === undefined) return 256;
 	return Math.round(0.299 * r + 0.587 * g + 0.114 * b);
 }

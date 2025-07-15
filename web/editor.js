@@ -181,7 +181,6 @@ export default class PixelEditor {
 		this.image = img;
 
 		this.#ctx.drawImage(img, 0, 0);
-		console.log(img.width, img.height);
 		this.imageData = this.#ctx.getImageData(0, 0, img.width, img.height);
 
 		const scaleX = this.#canvas.width / img.width;

@@ -1,3 +1,5 @@
+import util from "util";
+
 export default class Stack {
 	#items = [];
 
@@ -19,5 +21,17 @@ export default class Stack {
 
 	size() {
 		return this.#items.length;
+	}
+
+	clear() {
+		this.#items.length = 0;
+	}
+
+	toString() {
+		return `Stack [${this.#items.join(", ")}]`;
+	}
+
+	[util.inspect.custom]() {
+		return this.toString();
 	}
 }
