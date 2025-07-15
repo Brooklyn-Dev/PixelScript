@@ -9,11 +9,23 @@ import Interpreter from "./src/interpreter.js";
 
 // const bytes = extractBytes(canvas, ctx);
 
-// Output two calculations: 16 + 9, 1 - 2
-// Then output the sum of the results: 25 - 1 = 24
-const example = [
-	0x01, 0b10000, 0x01, 0b1001, 0x10, 0x03, 0x60, 0x01, 0b1, 0x01, 0b10, 0x11, 0x03, 0x60, 0x10, 0x60, 0x32,
+// prettier-ignore
+const helloWorld = [
+	0x01, 72,  0x61, // H
+	0x01, 101, 0x61, // e
+	0x01, 108, 0x61, // l
+	0x01, 108, 0x61, // l
+	0x01, 111, 0x61, // o
+	0x01, 44,  0x61, // ,
+	0x01, 32,  0x61, // space
+	0x01, 87,  0x61, // W
+	0x01, 111, 0x61, // o
+	0x01, 114, 0x61, // r
+	0x01, 108, 0x61, // l
+	0x01, 100, 0x61, // d
+	0x01, 33,  0x63, // !
+	0x32,            // HALT
 ];
 
 const interpreter = new Interpreter();
-interpreter.run(example);
+interpreter.run(helloWorld);

@@ -7,6 +7,8 @@ export default class Interpreter {
 	#pc = 0;
 	running = false;
 
+	#variables = new Array(256).fill(undefined);
+
 	constructor() {}
 
 	run(bytecode) {
@@ -54,8 +56,8 @@ export default class Interpreter {
 				if (this.#pc >= this.#bytecode.length) {
 					throw new InterpreterError(this.#stack, opcode, this.#pc, InterpreterErrorType.MissingOperand);
 				}
-
 				const operand = this.#bytecode.at(this.#pc);
+
 				this.#stack.push(operand);
 				break;
 			}
@@ -97,11 +99,67 @@ export default class Interpreter {
 				break;
 			}
 
+			// Variables
+			case 0x40: {
+				// STORE
+				this.#pc++;
+
+				if (this.#pc >= this.#bytecode.length) {
+					throw new InterpreterError(this.#stack, opcode, this.#pc, InterpreterErrorType.MissingOperand);
+				}
+				const id = this.#bytecode.at(this.#pc);
+
+				const value = this.#safePop();
+				this.#variables[id] = value;
+				break;
+			}
+
+			case 0x41: {
+				// LOAD
+				this.#pc++;
+
+				if (this.#pc >= this.#bytecode.length) {
+					throw new InterpreterError(this.#stack, opcode, this.#pc, InterpreterErrorType.MissingOperand);
+				}
+				const id = this.#bytecode.at(this.#pc);
+
+				if (this.#variables.at(id) === undefined) {
+					throw new InterpreterError(this.#stack, opcode, this.#pc, InterpreterErrorType.UndefinedVariable);
+				}
+				const value = this.#variables.at(id);
+
+				this.#stack.push(value);
+				break;
+			}
+
 			// I/O
 			case 0x60: {
-				// PRINT
-				const output = this.#safePop(opcode);
-				console.log(output);
+				// PRINT_NUM
+				const num = this.#safePop(opcode);
+				process.stdout.write(num.toString());
+				break;
+			}
+
+			case 0x61: {
+				// PRINT_CHAR
+				const num = this.#safePop(opcode);
+				const ascii = String.fromCharCode(num);
+				process.stdout.write(ascii);
+				break;
+			}
+
+			case 0x62: {
+				// PRINTLN_NUM
+				const num = this.#safePop(opcode);
+				process.stdout.write(num.toString() + "\n");
+				break;
+			}
+
+			case 0x63: {
+				// PRINTLN_CHAR
+				const num = this.#safePop(opcode);
+				const ascii = String.fromCharCode(num);
+				process.stdout.write(ascii + "\n");
 				break;
 			}
 

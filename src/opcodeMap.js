@@ -8,7 +8,12 @@ export default class OpcodeMap {
 		ADD: 0x10,
 		SUB: 0x11,
 		HALT: 0x32,
-		PRINT: 0x60,
+		STORE: 0x40,
+		LOAD: 0x41,
+		PRINT_NUM: 0x60,
+		PRINT_CHAR: 0x61,
+		PRINTLN_NUM: 0x62,
+		PRINTLN_CHAR: 0x63,
 	};
 
 	static codeToName = Object.fromEntries(Object.entries(this.nameToCode).map(([k, v]) => [v, k]));

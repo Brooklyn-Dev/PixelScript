@@ -24,4 +24,5 @@ export default class InterpreterError extends Error {
 export const InterpreterErrorType = Object.freeze({
 	StackUnderflow: "StackUnderflow",
 	MissingOperand: "MissingOperand",
+	UndefinedVariable: "UndefinedVariable",
 });
