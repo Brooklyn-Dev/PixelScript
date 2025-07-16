@@ -1,4 +1,5 @@
 import { getPixelFromImageData, getPixelBrightness } from "./utils/image";
+import { OPCODE_COLOUR_MAP } from "./utils/opcodes";
 import Rect from "./utils/rect";
 
 export default class PixelEditor {
@@ -11,6 +12,15 @@ export default class PixelEditor {
 	#ctx = null;
 	/** @type {CanvasRenderingContext2D} */
 	#ctxOverlay = null;
+
+	/** @type {{ x: number, y: number, colour: string }} */
+	#highlightedPixel = null;
+
+	#selectedOpcode = 0x01;
+	/** @type {Array<Array<number>>} */
+	#bytecodeGrid = null;
+
+	#needsRender = true;
 
 	/**
 	 * @param {HTMLCanvasElement} canvas
@@ -35,6 +45,23 @@ export default class PixelEditor {
 		this.isDragging = false;
 
 		this.#setupEventListeners();
+		this.#startRenderLoop();
+	}
+
+	/** @param {number} opcode*/
+	setSelectedOpcode(opcode) {
+		this.#selectedOpcode = opcode;
+	}
+
+	#startRenderLoop() {
+		const loop = () => {
+			if (this.#needsRender) {
+				this.#renderCanvas();
+				this.#needsRender = false;
+			}
+			requestAnimationFrame(loop);
+		};
+		requestAnimationFrame(loop);
 	}
 
 	#updateCanvasSize() {
@@ -67,11 +94,13 @@ export default class PixelEditor {
 		this.#ctx.imageSmoothingEnabled = false;
 		this.#ctxOverlay = this.#canvasOverlay.getContext("2d");
 		this.#ctxOverlay.imageSmoothingEnabled = false;
+
+		this.#needsRender = true;
 	}
 
 	/**
 	 * @param {MouseEvent} e
-	 * @returns {{x: number, y: number}}
+	 * @returns {{ x: number, y: number }}
 	 */
 	#getMousePos(e) {
 		const rect = this.#canvas.getBoundingClientRect();
@@ -81,13 +110,12 @@ export default class PixelEditor {
 		};
 	}
 
-	#clearOverlay() {
-		this.#ctxOverlay.clearRect(0, 0, this.#canvasOverlay.width, this.#canvasOverlay.height);
-	}
-
-	/** @param {MouseEvent} e */
-	#updateOverlay(e) {
-		if (!this.image) return;
+	/**
+	 * @param {MouseEvent} e
+	 * @returns {{ col: number, row: number} | null}
+	 * */
+	#getPixelCoordinates(e) {
+		if (!this.image) return null;
 
 		const { x: mx, y: my } = this.#getMousePos(e);
 
@@ -97,29 +125,40 @@ export default class PixelEditor {
 			my < this.viewport.y ||
 			my > this.viewport.y + this.viewport.h
 		) {
-			this.#clearOverlay();
-			return;
+			return null;
 		}
 
 		const col = Math.floor((mx - this.viewport.x) / this.zoom);
 		const row = Math.floor((my - this.viewport.y) / this.zoom);
 
-		const x = col * this.zoom + this.viewport.x;
-		const y = row * this.zoom + this.viewport.y;
+		return { col, row };
+	}
 
+	/** @param {MouseEvent} e */
+	#updatePixelHighlight(e) {
+		const coords = this.#getPixelCoordinates(e);
+		if (!coords) {
+			this.#highlightedPixel = null;
+			return;
+		}
+
+		const { col, row } = coords;
 		const pixel = getPixelFromImageData(this.imageData, col, row);
 		const pixelBrightness = getPixelBrightness(pixel);
-		const colour = pixelBrightness >= 128 ? "rgba(0,0,0,0.4)" : "rgba(255,255,255,0.4)";
 
-		this.renderOverlay(x, y, colour);
+		this.#highlightedPixel = {
+			x: col * this.zoom + this.viewport.x,
+			y: row * this.zoom + this.viewport.y,
+			colour: pixelBrightness >= 128 ? "rgba(0,0,0,0.4)" : "rgba(255,255,255,0.4)",
+		};
 	}
 
 	#setupEventListeners() {
 		window.addEventListener("resize", () => {
 			this.#updateCanvasSize();
-			this.#renderCanvas();
 		});
 
+		// Scroll
 		this.#canvas.addEventListener("wheel", (e) => {
 			if (!this.viewport) return;
 
@@ -139,8 +178,7 @@ export default class PixelEditor {
 			this.viewport.x = mx - offsetX * this.zoom;
 			this.viewport.y = my - offsetY * this.zoom;
 
-			this.#renderCanvas();
-			this.#updateOverlay(e);
+			this.#needsRender = true;
 		});
 
 		this.#canvas.addEventListener("mousedown", (e) => {
@@ -164,7 +202,8 @@ export default class PixelEditor {
 				this.#renderCanvas();
 			}
 
-			this.#updateOverlay(e);
+			this.#updatePixelHighlight(e);
+			this.#needsRender = true;
 		});
 
 		this.#canvas.addEventListener("mouseup", (e) => {
@@ -173,13 +212,33 @@ export default class PixelEditor {
 			this.isDragging = false;
 		});
 
-		this.#canvas.addEventListener("mousemove", this.#updateOverlay);
+		// Left-click
+		this.#canvas.addEventListener("click", (e) => {
+			const coords = this.#getPixelCoordinates(e);
+			if (!coords) return;
+
+			const { col, row } = coords;
+
+			this.#bytecodeGrid[row][col] = this.#selectedOpcode;
+			this.#needsRender = true;
+		});
+
+		// Right-click
+		this.#canvas.addEventListener("contextmenu", (e) => {
+			e.preventDefault();
+
+			const coords = this.#getPixelCoordinates(e);
+			if (!coords) return;
+
+			const { col, row } = coords;
+
+			this.#bytecodeGrid[row][col] = 0;
+			this.#needsRender = true;
+		});
 	}
 
 	/** @param {HTMLImageElement} img */
 	loadImage(img) {
-		this.image = img;
-
 		this.#ctx.drawImage(img, 0, 0);
 		this.imageData = this.#ctx.getImageData(0, 0, img.width, img.height);
 
@@ -188,8 +247,8 @@ export default class PixelEditor {
 
 		this.zoom = Math.min(scaleX, scaleY);
 
-		const offsetX = this.image.width * this.zoom;
-		const offsetY = this.image.height * this.zoom;
+		const offsetX = img.width * this.zoom;
+		const offsetY = img.height * this.zoom;
 
 		this.viewport = new Rect(
 			(this.#canvas.width - offsetX) / 2,
@@ -198,25 +257,49 @@ export default class PixelEditor {
 			offsetY
 		);
 
+		this.image = img;
+
 		this.#updateCanvasSize();
-		this.#renderCanvas();
+
+		this.#highlightedPixel = null;
+		this.#bytecodeGrid = Array.from({ length: img.height }, () => new Array(img.width).fill(0));
 	}
 
 	#renderCanvas() {
-		if (!this.viewport) return;
+		if (this.viewport) {
+			this.#ctx.clearRect(0, 0, this.#canvas.width, this.#canvas.height);
+			this.#ctx.drawImage(this.image, ...this.viewport);
+		}
 
-		this.#ctx.clearRect(0, 0, this.#canvas.width, this.#canvas.height);
-		this.#ctx.drawImage(this.image, ...this.viewport);
+		this.#ctxOverlay.clearRect(0, 0, this.#canvasOverlay.width, this.#canvasOverlay.height);
+
+		this.#renderBytecode();
+
+		if (this.#highlightedPixel) {
+			const { x, y, colour } = this.#highlightedPixel;
+			this.#ctxOverlay.fillStyle = colour;
+			this.#ctxOverlay.fillRect(x, y, this.zoom, this.zoom);
+		}
 	}
 
-	/**
-	 * @param {number} x
-	 * @param {number} y
-	 * @param {string} colour
-	 */
-	renderOverlay(x, y, colour) {
-		this.#ctxOverlay.clearRect(0, 0, this.#canvasOverlay.width, this.#canvasOverlay.height);
-		this.#ctxOverlay.fillStyle = colour;
-		this.#ctxOverlay.fillRect(x, y, this.zoom, this.zoom);
+	#renderBytecode() {
+		if (!this.#bytecodeGrid) return;
+
+		for (let row = 0; row < this.#bytecodeGrid.length; row++) {
+			for (let col = 0; col < this.#bytecodeGrid[row].length; col++) {
+				const opcode = this.#bytecodeGrid[row][col];
+				if (opcode === 0) continue;
+
+				const x = this.viewport.x + col * this.zoom;
+				const y = this.viewport.y + row * this.zoom;
+
+				this.#ctxOverlay.fillStyle = OPCODE_COLOUR_MAP.get(opcode);
+				this.#ctxOverlay.fillRect(x, y, this.zoom, this.zoom);
+
+				this.#ctxOverlay.strokeStyle = "black";
+				this.#ctxOverlay.lineWidth = 1;
+				this.#ctxOverlay.strokeRect(x + 0.5, y + 0.5, this.zoom - 1, this.zoom - 1);
+			}
+		}
 	}
 }

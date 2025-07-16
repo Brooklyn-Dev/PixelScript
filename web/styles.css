@@ -9,20 +9,91 @@ body {
 	display: flex;
 	justify-content: center;
 	align-items: center;
+	font-family: system-ui, -apple-system, sans-serif;
 }
 
 .editor {
 	display: flex;
-	flex-direction: column;
-	align-items: center;
+	flex-direction: row;
+	align-items: flex-start;
 	gap: 10px;
 	padding: 20px;
 }
 
 .editor__toolbar {
 	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
 	gap: 10px;
+}
+
+.editor__toolbar-file-input::-webkit-file-upload-button {
+	background: #f8f9fa;
+	border: 1px solid #ccc;
+	border-radius: 4px;
+	padding: 4px 8px;
+	margin-right: 8px;
+	cursor: pointer;
+	font-size: 13px;
+}
+
+.editor__toolbar-file-input::-webkit-file-upload-button:hover {
+	background: #e9ecef;
+}
+
+.editor__palette {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	padding: 12px;
+	flex: 1;
+}
+
+.editor__palette-category {
+	display: block;
+	width: 100%;
+	margin-bottom: 8px;
+}
+
+.editor__palette-category-title {
+	font-size: 13px;
+	font-weight: 600;
+	color: #666;
+	margin-bottom: 4px;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+}
+
+.editor__palette-row {
+	display: flex;
+	flex-wrap: nowrap;
+	gap: 4px;
+	width: 100%;
+}
+
+.editor__palette-item {
+	display: flex;
 	align-items: center;
+	justify-content: center;
+
+	width: 90px;
+	height: 30px;
+
+	font-size: 11px;
+	font-weight: 500;
+	text-align: center;
+
+	background: #fff;
+	color: #fff;
+	border: 1px solid #ccc;
+	border-radius: 4px;
+	cursor: pointer;
+	transition: border-color 0.2s;
+}
+
+.editor__palette-item--selected {
+	border-color: black;
+	border-width: 2px;
 }
 
 .editor__canvas-container {
@@ -30,6 +101,7 @@ body {
 	height: min(80vw, 80vh, 1000px);
 	border: 2px solid #333;
 	position: relative;
+	flex-shrink: 0;
 }
 
 .editor__canvas,
