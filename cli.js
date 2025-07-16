@@ -10,22 +10,43 @@ import Interpreter from "./src/interpreter.js";
 // const bytes = extractBytes(canvas, ctx);
 
 // prettier-ignore
-const helloWorld = [
-	0x01, 72,  0x61, // H
-	0x01, 101, 0x61, // e
-	0x01, 108, 0x61, // l
-	0x01, 108, 0x61, // l
-	0x01, 111, 0x61, // o
-	0x01, 44,  0x61, // ,
-	0x01, 32,  0x61, // space
-	0x01, 87,  0x61, // W
-	0x01, 111, 0x61, // o
-	0x01, 114, 0x61, // r
-	0x01, 108, 0x61, // l
-	0x01, 100, 0x61, // d
-	0x01, 33,  0x63, // !
-	0x32,            // HALT
+const fibonacci = [
+    // Init vars
+	0x01, 0, 0x40, 0,  // store a = 0
+	0x01, 1, 0x40, 1,  // store b = 1
+	0x01, 0, 0x40, 2,  // store i = 0
+
+	// Define function 0
+	0x55, 0,
+
+	0x41, 0,           // load a
+	0x62,              // print a
+
+	0x41, 0,           // load a
+	0x41, 1,           // load b
+	0x10, 0x40, 3,     // store temp = a + b
+
+	0x41, 1,           // load b
+	0x40, 0,           // store a = b
+
+	0x41, 3,           // load temp
+	0x40, 1,           // store b = temp
+
+	0x41, 2,           // load i
+	0x01, 1,           // push 1
+	0x10, 0x40, 2,     // store i = i + 1
+
+	0x41, 2,           // load i
+	0x01, 10,          // push 10
+	0x23,              // i < 10
+	0x53, 0,           // callp
+
+	0x54,              // return
+
+	// Main program
+	0x50, 0,        // call function 0
+	0x30            // halt
 ];
 
 const interpreter = new Interpreter();
-interpreter.run(helloWorld);
+interpreter.run(fibonacci);

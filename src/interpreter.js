@@ -1,4 +1,5 @@
 import InterpreterError, { InterpreterErrorType } from "./interpreterError.js";
+import Opcode from "./opcode.js";
 import Stack from "./stack.js";
 import UserException from "./userException.js";
 
@@ -223,6 +224,15 @@ export default class Interpreter {
 				break;
 			}
 
+			case 0x04: {
+				// SWAP
+				const a = this.#safePop(opcode);
+				const b = this.#safePop(opcode);
+				this.#stack.push(a);
+				this.#stack.push(b);
+				break;
+			}
+
 			// Arithmetic
 			case 0x10: {
 				// ADD
@@ -280,8 +290,41 @@ export default class Interpreter {
 				break;
 			}
 
+			// Logic
+			case 0x20: {
+				// EQ
+				const a = this.#safePop(opcode);
+				const b = this.#safePop(opcode);
+				this.#stack.push(a === b ? 1 : 0);
+				break;
+			}
+
+			case 0x21: {
+				// NEQ
+				const a = this.#safePop(opcode);
+				const b = this.#safePop(opcode);
+				this.#stack.push(a !== b ? 1 : 0);
+				break;
+			}
+
+			case 0x22: {
+				// GT
+				const a = this.#safePop(opcode);
+				const b = this.#safePop(opcode);
+				this.#stack.push(b > a ? 1 : 0);
+				break;
+			}
+
+			case 0x23: {
+				// LT
+				const a = this.#safePop(opcode);
+				const b = this.#safePop(opcode);
+				this.#stack.push(b < a ? 1 : 0);
+				break;
+			}
+
 			// Control
-			case 0x32: {
+			case 0x30: {
 				// HALT
 				this.running = false;
 				break;
@@ -323,6 +366,51 @@ export default class Interpreter {
 			}
 
 			case 0x51: {
+				// CALLZ <func-id>
+				const funcId = this.#nextOperand(opcode);
+				if (this.#functions.at(funcId) === undefined) {
+					throw new InterpreterError(this.#stack, opcode, this.#pc, InterpreterErrorType.UndefinedFunction);
+				}
+
+				const value = this.#safePop(opcode);
+				if (value === 0) {
+					this.#callStack.push(this.#pc + 1);
+					this.#pc = this.#functions.at(funcId);
+				}
+				break;
+			}
+
+			case 0x52: {
+				// CALLNZ <func-id>
+				const funcId = this.#nextOperand(opcode);
+				if (this.#functions.at(funcId) === undefined) {
+					throw new InterpreterError(this.#stack, opcode, this.#pc, InterpreterErrorType.UndefinedFunction);
+				}
+
+				const value = this.#safePop(opcode);
+				if (value !== 0) {
+					this.#callStack.push(this.#pc + 1);
+					this.#pc = this.#functions.at(funcId);
+				}
+				break;
+			}
+
+			case 0x53: {
+				// CALLP <func-id>
+				const funcId = this.#nextOperand(opcode);
+				if (this.#functions.at(funcId) === undefined) {
+					throw new InterpreterError(this.#stack, opcode, this.#pc, InterpreterErrorType.UndefinedFunction);
+				}
+
+				const value = this.#safePop(opcode);
+				if (value > 0) {
+					this.#callStack.push(this.#pc + 1);
+					this.#pc = this.#functions.at(funcId);
+				}
+				break;
+			}
+
+			case 0x54: {
 				// RETURN
 				if (this.#callStack.length === 0) {
 					this.running = false;
@@ -332,12 +420,12 @@ export default class Interpreter {
 				break;
 			}
 
-			case 0x52: {
+			case 0x55: {
 				// FUNC <func-id>
 				const funcId = this.#nextOperand(opcode);
 				this.#functions[funcId] = this.#pc;
 
-				while (this.#bytecode.at(this.#pc) !== 0x51 && this.#pc < this.#bytecode.length) {
+				while (this.#bytecode.at(this.#pc) !== Opcode.RETURN && this.#pc < this.#bytecode.length) {
 					this.#pc++;
 				}
 
