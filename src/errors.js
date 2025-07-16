@@ -25,4 +25,5 @@ export const InterpreterErrorType = Object.freeze({
 	StackUnderflow: "StackUnderflow",
 	MissingOperand: "MissingOperand",
 	UndefinedVariable: "UndefinedVariable",
+	UndefinedFunction: "UndefinedFunction",
 });

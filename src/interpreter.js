@@ -9,6 +9,9 @@ export default class Interpreter {
 
 	#variables = new Array(256).fill(undefined);
 
+	#functions = new Array(256).fill(undefined);
+	#callStack = new Stack();
+
 	constructor() {}
 
 	run(bytecode) {
@@ -46,18 +49,21 @@ export default class Interpreter {
 		return this.#stack.peek();
 	}
 
+	#nextOperand() {
+		this.#pc++;
+		if (this.#pc >= this.#bytecode.length) {
+			throw new InterpreterError(this.#stack, opcode, this.#pc, InterpreterErrorType.MissingOperand);
+		}
+
+		return this.#bytecode.at(this.#pc);
+	}
+
 	#executeInstruction(opcode) {
 		switch (opcode) {
 			// Stack
 			case 0x01: {
 				// PUSH
-				this.#pc++;
-
-				if (this.#pc >= this.#bytecode.length) {
-					throw new InterpreterError(this.#stack, opcode, this.#pc, InterpreterErrorType.MissingOperand);
-				}
-				const operand = this.#bytecode.at(this.#pc);
-
+				const operand = this.#nextOperand();
 				this.#stack.push(operand);
 				break;
 			}
@@ -102,13 +108,7 @@ export default class Interpreter {
 			// Variables
 			case 0x40: {
 				// STORE
-				this.#pc++;
-
-				if (this.#pc >= this.#bytecode.length) {
-					throw new InterpreterError(this.#stack, opcode, this.#pc, InterpreterErrorType.MissingOperand);
-				}
-				const id = this.#bytecode.at(this.#pc);
-
+				const id = this.#nextOperand();
 				const value = this.#safePop();
 				this.#variables[id] = value;
 				break;
@@ -116,12 +116,7 @@ export default class Interpreter {
 
 			case 0x41: {
 				// LOAD
-				this.#pc++;
-
-				if (this.#pc >= this.#bytecode.length) {
-					throw new InterpreterError(this.#stack, opcode, this.#pc, InterpreterErrorType.MissingOperand);
-				}
-				const id = this.#bytecode.at(this.#pc);
+				const id = this.#nextOperand();
 
 				if (this.#variables.at(id) === undefined) {
 					throw new InterpreterError(this.#stack, opcode, this.#pc, InterpreterErrorType.UndefinedVariable);
@@ -129,6 +124,40 @@ export default class Interpreter {
 				const value = this.#variables.at(id);
 
 				this.#stack.push(value);
+				break;
+			}
+
+			// Functions
+			case 0x50: {
+				// CALL
+				const funcId = this.#nextOperand();
+				if (this.#functions.at(funcId) === undefined) {
+					throw new InterpreterError(this.#stack, opcode, this.#pc, InterpreterErrorType.UndefinedFunction);
+				}
+
+				this.#callStack.push(this.#pc + 1);
+				this.#pc = this.#functions.at(funcId);
+				break;
+			}
+
+			case 0x51: {
+				// RETURN
+				if (this.#callStack.length === 0) {
+					this.running = false;
+				}
+				this.#pc = this.#callStack.pop() - 1;
+				break;
+			}
+
+			case 0x52: {
+				// FUNC
+				const funcId = this.#nextOperand();
+				this.#functions[funcId] = this.#pc;
+
+				while (this.#bytecode.at(this.#pc) !== 0x51 && this.#pc < this.#bytecode.length) {
+					this.#pc++;
+				}
+
 				break;
 			}
 
