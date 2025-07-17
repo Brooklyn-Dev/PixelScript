@@ -2,11 +2,20 @@ import PixelEditor from "./editor";
 import { OPCODE_CATEGORIES, OPCODES } from "./utils/opcodes";
 
 const fileInput = document.querySelector(".editor__toolbar-file-input");
+const modeBtn = document.querySelector(".editor__toolbar-mode-btn");
+const palette = document.querySelector(".editor__palette");
 const canvas = document.querySelector(".editor__canvas");
 const canvasOverlay = document.querySelector(".editor__canvas-overlay");
-const palette = document.querySelector(".editor__palette");
 
 const pixelEditor = new PixelEditor(canvas, canvasOverlay);
+
+// Mode
+let mode = "opcode";
+modeBtn.addEventListener("click", () => {
+	mode = mode === "opcode" ? "literal" : "opcode";
+	modeBtn.textContent = `Mode: ${mode === "opcode" ? "Draw Opcode" : "Enter Data"}`;
+	pixelEditor.toggleMode();
+});
 
 // Categorise opcodes
 const categories = {};
@@ -18,7 +27,6 @@ for (const opcode of OPCODES) {
 	categories[category].push(opcode);
 }
 
-console.log(categories);
 // Create categorised palette
 let firstItem = null;
 

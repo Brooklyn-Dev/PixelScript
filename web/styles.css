@@ -27,7 +27,8 @@ body {
 	gap: 10px;
 }
 
-.editor__toolbar-file-input::-webkit-file-upload-button {
+.editor__toolbar-file-input::-webkit-file-upload-button,
+.editor__toolbar-mode-btn {
 	background: #f8f9fa;
 	border: 1px solid #ccc;
 	border-radius: 4px;
@@ -37,7 +38,8 @@ body {
 	font-size: 13px;
 }
 
-.editor__toolbar-file-input::-webkit-file-upload-button:hover {
+.editor__toolbar-file-input::-webkit-file-upload-button:hover,
+.editor__toolbar-mode-btn:hover {
 	background: #e9ecef;
 }
 

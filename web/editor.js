@@ -18,7 +18,12 @@ export default class PixelEditor {
 
 	#selectedOpcode = 0x01;
 	/** @type {Array<Array<number>>} */
-	#bytecodeGrid = null;
+	#opcodeGrid = null;
+
+	/** @type {Array<Array<number>>} */
+	#dataGrid = null;
+
+	#mode = "opcode";
 
 	#needsRender = true;
 
@@ -51,6 +56,11 @@ export default class PixelEditor {
 	/** @param {number} opcode*/
 	setSelectedOpcode(opcode) {
 		this.#selectedOpcode = opcode;
+	}
+
+	toggleMode() {
+		this.#mode = this.#mode === "opcode" ? "literal" : "opcode";
+		this.#needsRender = true;
 	}
 
 	#startRenderLoop() {
@@ -219,7 +229,22 @@ export default class PixelEditor {
 
 			const { col, row } = coords;
 
-			this.#bytecodeGrid[row][col] = this.#selectedOpcode;
+			if (this.#mode === "opcode") {
+				if (this.#dataGrid[row][col] === 0) {
+					this.#opcodeGrid[row][col] = this.#selectedOpcode;
+				}
+			} else {
+				if (this.#opcodeGrid[row][col] === 0) {
+					const data = prompt("Enter a value 0-255", "0");
+					const val = Number(data);
+					if (!isNaN(val) && val >= 0 && val <= 255) {
+						this.#dataGrid[row][col] = val;
+					} else {
+						alert("Invalid value! Must be 0-255.");
+					}
+				}
+			}
+
 			this.#needsRender = true;
 		});
 
@@ -232,7 +257,12 @@ export default class PixelEditor {
 
 			const { col, row } = coords;
 
-			this.#bytecodeGrid[row][col] = 0;
+			if (this.#mode === "opcode") {
+				this.#opcodeGrid[row][col] = 0;
+			} else {
+				this.#dataGrid[row][col] = 0;
+			}
+
 			this.#needsRender = true;
 		});
 	}
@@ -262,7 +292,8 @@ export default class PixelEditor {
 		this.#updateCanvasSize();
 
 		this.#highlightedPixel = null;
-		this.#bytecodeGrid = Array.from({ length: img.height }, () => new Array(img.width).fill(0));
+		this.#opcodeGrid = Array.from({ length: img.height }, () => new Array(img.width).fill(0));
+		this.#dataGrid = Array.from({ length: img.height }, () => new Array(img.width).fill(0));
 	}
 
 	#renderCanvas() {
@@ -273,7 +304,7 @@ export default class PixelEditor {
 
 		this.#ctxOverlay.clearRect(0, 0, this.#canvasOverlay.width, this.#canvasOverlay.height);
 
-		this.#renderBytecode();
+		this.#renderOpcode();
 
 		if (this.#highlightedPixel) {
 			const { x, y, colour } = this.#highlightedPixel;
@@ -282,23 +313,34 @@ export default class PixelEditor {
 		}
 	}
 
-	#renderBytecode() {
-		if (!this.#bytecodeGrid) return;
+	#renderOpcode() {
+		if (!this.#opcodeGrid) return;
 
-		for (let row = 0; row < this.#bytecodeGrid.length; row++) {
-			for (let col = 0; col < this.#bytecodeGrid[row].length; col++) {
-				const opcode = this.#bytecodeGrid[row][col];
-				if (opcode === 0) continue;
+		this.#ctxOverlay.strokeStyle = "black";
+		this.#ctxOverlay.lineWidth = 1;
+
+		for (let row = 0; row < this.#opcodeGrid.length; row++) {
+			for (let col = 0; col < this.#opcodeGrid[row].length; col++) {
+				const opcode = this.#opcodeGrid[row][col];
+				const data = this.#dataGrid[row][col];
 
 				const x = this.viewport.x + col * this.zoom;
 				const y = this.viewport.y + row * this.zoom;
 
-				this.#ctxOverlay.fillStyle = OPCODE_COLOUR_MAP.get(opcode);
-				this.#ctxOverlay.fillRect(x, y, this.zoom, this.zoom);
+				if (opcode !== 0) {
+					this.#ctxOverlay.fillStyle = OPCODE_COLOUR_MAP.get(opcode);
+					this.#ctxOverlay.fillRect(x, y, this.zoom, this.zoom);
 
-				this.#ctxOverlay.strokeStyle = "black";
-				this.#ctxOverlay.lineWidth = 1;
-				this.#ctxOverlay.strokeRect(x + 0.5, y + 0.5, this.zoom - 1, this.zoom - 1);
+					this.#ctxOverlay.strokeRect(x + 0.5, y + 0.5, this.zoom - 1, this.zoom - 1);
+				} else if (data !== 0) {
+					this.#ctxOverlay.fillStyle = "white";
+					this.#ctxOverlay.font = `${this.zoom * 0.55}px monospace`;
+					this.#ctxOverlay.textAlign = "center";
+					this.#ctxOverlay.textBaseline = "middle";
+					this.#ctxOverlay.fillText(data, x + this.zoom / 2, y + this.zoom / 2);
+
+					this.#ctxOverlay.strokeRect(x + 0.5, y + 0.5, this.zoom - 1, this.zoom - 1);
+				}
 			}
 		}
 	}
