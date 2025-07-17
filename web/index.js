@@ -1,4 +1,3 @@
-import { extractBytes } from "../src/image";
 import Interpreter from "../src/interpreter";
 import PixelEditor from "./editor";
 import encodeBytecode from "./utils/bytecodeEncoder";
