@@ -28,7 +28,9 @@ body {
 }
 
 .editor__toolbar-file-input::-webkit-file-upload-button,
-.editor__toolbar-mode-btn {
+.editor__toolbar-export-btn,
+.editor__toolbar-mode-btn,
+.editor__toolbar-run-btn {
 	background: #f8f9fa;
 	border: 1px solid #ccc;
 	border-radius: 4px;
@@ -39,7 +41,9 @@ body {
 }
 
 .editor__toolbar-file-input::-webkit-file-upload-button:hover,
-.editor__toolbar-mode-btn:hover {
+.editor__toolbar-export-btn:hover,
+.editor__toolbar-mode-btn:hover,
+.editor__toolbar-run-btn:hover {
 	background: #e9ecef;
 }
 

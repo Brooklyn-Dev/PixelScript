@@ -1,8 +1,15 @@
+import { extractBytes } from "../src/image";
+import Interpreter from "../src/interpreter";
 import PixelEditor from "./editor";
+import encodeBytecode from "./utils/bytecodeEncoder";
+import encodeImage from "./utils/imageEncoder";
 import { OPCODE_CATEGORIES, OPCODES } from "./utils/opcodes";
 
 const fileInput = document.querySelector(".editor__toolbar-file-input");
+const exportBtn = document.querySelector(".editor__toolbar-export-btn");
 const modeBtn = document.querySelector(".editor__toolbar-mode-btn");
+const runBtn = document.querySelector(".editor__toolbar-run-btn");
+const outputPre = document.querySelector(".editor__output");
 const palette = document.querySelector(".editor__palette");
 const canvas = document.querySelector(".editor__canvas");
 const canvasOverlay = document.querySelector(".editor__canvas-overlay");
@@ -98,4 +105,69 @@ fileInput.addEventListener("change", async (e) => {
 	} catch (err) {
 		console.error(`Failed to load file: ${err}`);
 	}
+});
+
+function exportProgram(opcodeGrid, dataGrid, originalImageData) {
+	const bytecode = encodeBytecode(opcodeGrid, dataGrid);
+	const width = opcodeGrid[0].length;
+	const height = opcodeGrid.length;
+
+	const imageData = encodeImage(bytecode, width, height, originalImageData);
+
+	const canvas = document.createElement("canvas");
+	canvas.width = width;
+	canvas.height = height;
+	const ctx = canvas.getContext("2d");
+	ctx.putImageData(imageData, 0, 0);
+
+	const link = document.createElement("a");
+	link.download = "program.png";
+	link.href = canvas.toDataURL();
+	link.click();
+}
+
+exportBtn.addEventListener("click", () => {
+	const opcodeGrid = pixelEditor.getOpcodeGrid();
+	const dataGrid = pixelEditor.getDataGrid();
+
+	if (opcodeGrid === null) {
+		alert("Cannot export program with no operations.");
+		return;
+	}
+
+	exportProgram(opcodeGrid, dataGrid, pixelEditor.imageData);
+});
+
+runBtn.addEventListener("click", () => {
+	const opcodeGrid = pixelEditor.getOpcodeGrid();
+	const dataGrid = pixelEditor.getDataGrid();
+
+	if (!opcodeGrid) {
+		alert("Cannot run program with no operations.");
+		return;
+	}
+
+	const bytecode = encodeBytecode(opcodeGrid, dataGrid);
+	const width = opcodeGrid[0].length;
+	const height = opcodeGrid.length;
+
+	// Encode bytecode into image
+	const imageData = encodeImage(bytecode, width, height, pixelEditor.imageData);
+
+	// Create temp canvas to extract from
+	const canvas = document.createElement("canvas");
+	canvas.width = width;
+	canvas.height = height;
+	const ctx = canvas.getContext("2d");
+	ctx.putImageData(imageData, 0, 0);
+
+	// Extract bytes
+	const extractedBytes = extractBytes(canvas, ctx);
+
+	// Run program
+	const interpreter = new Interpreter((output) => {
+		outputPre.textContent += output + "\n";
+	});
+	outputPre.textContent = ""; // clear previous output
+	interpreter.run(extractedBytes);
 });

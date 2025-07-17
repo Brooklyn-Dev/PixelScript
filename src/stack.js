@@ -31,7 +31,7 @@ export default class Stack {
 		return `Stack [${this.#items.join(", ")}]`;
 	}
 
-	[util.inspect.custom]() {
-		return this.toString();
-	}
+	// [util.inspect.custom]() {
+	// 	return this.toString();
+	// }
 }

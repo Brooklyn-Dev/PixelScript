@@ -53,6 +53,16 @@ export default class PixelEditor {
 		this.#startRenderLoop();
 	}
 
+	/** @returns {Array<Array<number>>} */
+	getOpcodeGrid() {
+		return this.#opcodeGrid?.map((row) => [...row]) ?? null;
+	}
+
+	/** @returns {Array<Array<number>>} */
+	getDataGrid() {
+		return this.#dataGrid?.map((row) => [...row]) ?? null;
+	}
+
 	/** @param {number} opcode*/
 	setSelectedOpcode(opcode) {
 		this.#selectedOpcode = opcode;

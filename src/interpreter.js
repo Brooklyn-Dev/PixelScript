@@ -3,6 +3,15 @@ import Opcode from "./opcode.js";
 import Stack from "./stack.js";
 import UserException from "./userException.js";
 
+function print(text, newline = false) {
+	if (typeof process !== "undefined" && process.stdout?.write) {
+		process.stdout.write(text + (newline ? "\n" : ""));
+	} else {
+		const el = document.getElementById("output");
+		if (el) el.textContent += text + (newline ? "\n" : "");
+	}
+}
+
 export default class Interpreter {
 	#stack = new Stack();
 	#bytecode = [];
@@ -440,30 +449,30 @@ export default class Interpreter {
 			case 0x60: {
 				// PRINT_NUM
 				const num = this.#safePop(opcode);
-				process.stdout.write(num.toString());
+				print(num.toString());
 				break;
 			}
 
 			case 0x61: {
 				// PRINT_CHAR
 				const num = this.#safePop(opcode);
-				const ascii = String.fromCharCode(num);
-				process.stdout.write(ascii);
+				const ascii = String.fromCharCode(num % 256);
+				print(ascii);
 				break;
 			}
 
 			case 0x62: {
 				// PRINTLN_NUM
 				const num = this.#safePop(opcode);
-				process.stdout.write(num.toString() + "\n");
+				print(num.toString(), true);
 				break;
 			}
 
 			case 0x63: {
 				// PRINTLN_CHAR
 				const num = this.#safePop(opcode);
-				const ascii = String.fromCharCode(num);
-				process.stdout.write(ascii + "\n");
+				const ascii = String.fromCharCode(num % 256);
+				print(ascii, true);
 				break;
 			}
 
