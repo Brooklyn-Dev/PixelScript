@@ -3,15 +3,6 @@ import Opcode from "./opcode.js";
 import Stack from "./stack.js";
 import UserException from "./userException.js";
 
-function print(text, newline = false) {
-	if (typeof process !== "undefined" && process.stdout?.write) {
-		process.stdout.write(text + (newline ? "\n" : ""));
-	} else {
-		const el = document.getElementById("output");
-		if (el) el.textContent += text + (newline ? "\n" : "");
-	}
-}
-
 export default class Interpreter {
 	#stack = new Stack();
 	#bytecode = [];
@@ -23,10 +14,20 @@ export default class Interpreter {
 	#functions = new Array(256).fill(undefined);
 	#callStack = new Stack();
 
+	#onStdout;
+	#onStderr;
+
 	#exceptionStack = new Stack();
 	#handlingException = false;
 
-	constructor() {}
+	/**
+	 * @param {(message: string) => void} onStdout
+	 * @param {(message: string) => void} onStderr
+	 */
+	constructor(onStdout, onStderr) {
+		this.#onStdout = onStdout;
+		this.#onStderr = onStderr;
+	}
 
 	/** @param {number} bytecode */
 	run(bytecode) {
@@ -51,7 +52,7 @@ export default class Interpreter {
 			}
 		} catch (err) {
 			if (err instanceof InterpreterError) {
-				console.error(err.message);
+				this.#onStderr(err.message);
 			} else {
 				throw err;
 			}
@@ -449,7 +450,7 @@ export default class Interpreter {
 			case 0x60: {
 				// PRINT_NUM
 				const num = this.#safePop(opcode);
-				print(num.toString());
+				this.#onStdout(num.toString());
 				break;
 			}
 
@@ -457,14 +458,14 @@ export default class Interpreter {
 				// PRINT_CHAR
 				const num = this.#safePop(opcode);
 				const ascii = String.fromCharCode(num % 256);
-				print(ascii);
+				this.#onStdout(ascii);
 				break;
 			}
 
 			case 0x62: {
 				// PRINTLN_NUM
 				const num = this.#safePop(opcode);
-				print(num.toString(), true);
+				this.#onStdout(num.toString() + "\n");
 				break;
 			}
 
@@ -472,7 +473,7 @@ export default class Interpreter {
 				// PRINTLN_CHAR
 				const num = this.#safePop(opcode);
 				const ascii = String.fromCharCode(num % 256);
-				print(ascii, true);
+				this.#onStdout(ascii + "\n");
 				break;
 			}
 

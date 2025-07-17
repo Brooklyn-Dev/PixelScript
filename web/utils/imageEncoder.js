@@ -22,7 +22,7 @@ export default function encodeImage(bytecode, width, height, originalImageData) 
 	}
 
 	for (let i = 0; i < bytecode.length; i++) {
-		const byte = bytecode[i];
+		const byte = bytecode[i] !== null ? bytecode[i] : 0;
 		const offset = i * 4;
 
 		const rLSB = (byte >> 6) & 0b11;

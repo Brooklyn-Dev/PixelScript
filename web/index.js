@@ -147,27 +147,19 @@ runBtn.addEventListener("click", () => {
 		return;
 	}
 
+	outputPre.innerHTML = "";
+
+	const onStdout = (message) => {
+		outputPre.innerHTML += `<span>${message}</span>`;
+		console.log(message);
+	};
+
+	const onStderr = (message) => {
+		outputPre.innerHTML += `<span style="color: red;">${message}</span>`;
+		console.error(message);
+	};
+
 	const bytecode = encodeBytecode(opcodeGrid, dataGrid);
-	const width = opcodeGrid[0].length;
-	const height = opcodeGrid.length;
-
-	// Encode bytecode into image
-	const imageData = encodeImage(bytecode, width, height, pixelEditor.imageData);
-
-	// Create temp canvas to extract from
-	const canvas = document.createElement("canvas");
-	canvas.width = width;
-	canvas.height = height;
-	const ctx = canvas.getContext("2d");
-	ctx.putImageData(imageData, 0, 0);
-
-	// Extract bytes
-	const extractedBytes = extractBytes(canvas, ctx);
-
-	// Run program
-	const interpreter = new Interpreter((output) => {
-		outputPre.textContent += output + "\n";
-	});
-	outputPre.textContent = ""; // clear previous output
-	interpreter.run(extractedBytes);
+	const interpreter = new Interpreter(onStdout, onStderr);
+	interpreter.run(bytecode);
 });

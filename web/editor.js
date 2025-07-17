@@ -240,12 +240,16 @@ export default class PixelEditor {
 			const { col, row } = coords;
 
 			if (this.#mode === "opcode") {
-				if (this.#dataGrid[row][col] === 0) {
+				if (this.#dataGrid[row][col] === null) {
 					this.#opcodeGrid[row][col] = this.#selectedOpcode;
 				}
 			} else {
 				if (this.#opcodeGrid[row][col] === 0) {
 					const data = prompt("Enter a value 0-255", "0");
+					if (data === null) {
+						return;
+					}
+
 					const val = Number(data);
 					if (!isNaN(val) && val >= 0 && val <= 255) {
 						this.#dataGrid[row][col] = val;
@@ -270,7 +274,7 @@ export default class PixelEditor {
 			if (this.#mode === "opcode") {
 				this.#opcodeGrid[row][col] = 0;
 			} else {
-				this.#dataGrid[row][col] = 0;
+				this.#dataGrid[row][col] = null;
 			}
 
 			this.#needsRender = true;
@@ -303,7 +307,7 @@ export default class PixelEditor {
 
 		this.#highlightedPixel = null;
 		this.#opcodeGrid = Array.from({ length: img.height }, () => new Array(img.width).fill(0));
-		this.#dataGrid = Array.from({ length: img.height }, () => new Array(img.width).fill(0));
+		this.#dataGrid = Array.from({ length: img.height }, () => new Array(img.width).fill(null));
 	}
 
 	#renderCanvas() {
@@ -342,7 +346,7 @@ export default class PixelEditor {
 					this.#ctxOverlay.fillRect(x, y, this.zoom, this.zoom);
 
 					this.#ctxOverlay.strokeRect(x + 0.5, y + 0.5, this.zoom - 1, this.zoom - 1);
-				} else if (data !== 0) {
+				} else if (data !== null) {
 					this.#ctxOverlay.fillStyle = "white";
 					this.#ctxOverlay.font = `${this.zoom * 0.55}px monospace`;
 					this.#ctxOverlay.textAlign = "center";

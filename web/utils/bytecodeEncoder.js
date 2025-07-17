@@ -14,7 +14,7 @@ export default function encodeBytecode(opcodeGrid, dataGrid) {
 			const opcode = opcodeGrid[row][col];
 			const data = dataGrid[row][col];
 
-			if (opcode !== 0 && data !== 0) {
+			if (opcode !== 0 && data !== null) {
 				throw new Error(`Pixel [${row}, ${col}] has both opcode and data.`);
 			}
 
