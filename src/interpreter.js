@@ -21,8 +21,8 @@ export default class Interpreter {
 	#handlingException = false;
 
 	/**
-	 * @param {(message: string) => void} onStdout
-	 * @param {(message: string) => void} onStderr
+	 * @param {(msg: string) => void} onStdout
+	 * @param {(err: string) => void} onStderr
 	 */
 	constructor(onStdout, onStderr) {
 		this.#onStdout = onStdout;
