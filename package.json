@@ -10,7 +10,7 @@
 	"keywords": [],
 	"author": "Brooklyn Baylis",
 	"license": "",
-	"description": "",
+	"description": "PixelScript is a stack-based esolang where code is embedded directly within PNG image pixels.",
 	"dependencies": {
 		"pngjs": "^7.0.0"
 	},
