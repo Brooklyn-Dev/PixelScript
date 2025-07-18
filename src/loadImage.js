@@ -8,7 +8,7 @@ import { PNG } from "pngjs";
 export function loadImage(path) {
 	return new Promise((resolve, reject) => {
 		fs.createReadStream(path)
-			.pipe(new PNG())
+			.pipe(new PNG({ filterType: 0 }))
 			.on("parsed", function () {
 				resolve(this.data);
 			})

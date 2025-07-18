@@ -165,7 +165,7 @@ function exportProgram(opcodeGrid, dataGrid, originalImageData) {
 
 	const link = document.createElement("a");
 	link.download = "program.png";
-	link.href = canvas.toDataURL();
+	link.href = canvas.toDataURL("image/png");
 	link.click();
 }
 
