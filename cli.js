@@ -1,5 +1,6 @@
-import { extractBytes, loadImage } from "./src/image.js";
+import { extractBytes } from "./src/extractBytes.js";
 import Interpreter from "./src/interpreter.js";
+import { loadImage } from "./src/loadImage.js";
 
 const args = process.argv.slice(2);
 
